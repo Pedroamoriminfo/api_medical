@@ -36,10 +36,14 @@ return [
     */
 
     'guards' => [
-        'api' => [
-            'driver' => 'jwt',
+        'web' => [
+            'driver' => 'session',
             'provider' => 'users',
-            // 'hash' => false,
+        ],
+        'api' => [
+            'driver' => 'jwt',  // Deve estar configurado como 'jwt' se estiver usando JWT
+            'provider' => 'users',
+            'hash' => false,
         ],
     ],
 
