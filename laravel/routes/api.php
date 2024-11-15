@@ -20,9 +20,38 @@ use Illuminate\Support\Facades\Route;
 // });
 Route::prefix('/v1')->group(function () {
 
-
+    // Autenticação
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth:api');
     Route::get('/user', [AuthController::class, 'me'])->middleware('auth:api');
-});
 
+    // Pacientes
+    Route::middleware('auth:api')->prefix('/patients')->group(function () {
+        Route::get('/', [PatientController::class, 'index']);         // Listar pacientes
+        Route::post('/', [PatientController::class, 'store']);       // Criar paciente
+        Route::get('/{id}', [PatientController::class, 'show']);     // Exibir paciente
+        Route::put('/{id}', [PatientController::class, 'update']);   // Atualizar paciente
+        Route::delete('/{id}', [PatientController::class, 'destroy']);// Deletar paciente
+    });
+
+    // Medicações
+    Route::middleware('auth:api')->prefix('/medications')->group(function () {
+        Route::get('/', [MedicationController::class, 'index']);         // Listar medicações
+        Route::post('/', [MedicationController::class, 'store']);       // Criar medicação
+        Route::get('/{id}', [MedicationController::class, 'show']);     // Exibir medicação
+        Route::put('/{id}', [MedicationController::class, 'update']);   // Atualizar medicação
+        Route::delete('/{id}', [MedicationController::class, 'destroy']);// Deletar medicação
+    });
+
+    // Doses
+    Route::middleware('auth:api')->prefix('/doses')->group(function () {
+        Route::get('/{medicationId}', [DoseController::class, 'index']);     // Listar doses de uma medicação
+        Route::put('/{id}', [DoseController::class, 'updateStatus']);        // Atualizar status de uma dose (Tomada, Perdida)
+    });
+
+    // Relatórios de Aderência
+    Route::middleware('auth:api')->prefix('/reports')->group(function () {
+        Route::get('/{medicationId}', [ReportController::class, 'generate']); // Gerar relatório de aderência
+    });
+
+});
