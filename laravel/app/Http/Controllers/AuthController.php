@@ -100,10 +100,9 @@ class AuthController extends Controller
                         'version' => 'V1',
                     ],
                     'data' => $user,
-                ], 201); // Código 201 indica criação bem-sucedida
+                ], 201);
             }
 
-            // Caso o salvamento falhe
             return response()->json([
                 'metadata' => [
                     'result' => 0,
@@ -111,9 +110,9 @@ class AuthController extends Controller
                     'reason' => 'Não foi possível cadastrar o usuário.',
                     'version' => 'V1',
                 ],
-            ], 500); // Código 500 indica erro do servidor
+            ], 500);
         } catch (\Exception $e) {
-            // Captura de erros inesperados
+
             return response()->json([
                 'metadata' => [
                     'result' => 0,
