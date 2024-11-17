@@ -2,20 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
+     * Os atributos que podem ser atribuídos em massa.
      */
     protected $fillable = [
         'name',
@@ -24,9 +20,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
+     * Os atributos ocultos para arrays.
      */
     protected $hidden = [
         'password',
@@ -34,22 +28,25 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
+     * Os atributos que devem ser convertidos em tipos nativos.
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
 
-     // Implementação dos métodos exigidos por JWTSubject
-     public function getJWTIdentifier()
-     {
-         return $this->getKey();
-     }
+    /**
+     * Retorna a chave primária usada para o JWT.
+     */
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
 
-     public function getJWTCustomClaims()
-     {
-         return [];
-     }
+    /**
+     * Retorna uma coleção de claims personalizadas para o JWT.
+     */
+    public function getJWTCustomClaims()
+    {
+        return [];
+    }
 }
