@@ -62,14 +62,15 @@ class MedicationController extends Controller
     {
         // Validação dos dados de entrada
         $validated = $request->validate([
-            'name' => 'required',
-            'dosage' => 'required',
-            'frequency' => 'required',
-            'duration' => 'required',
-            'patient_id' => 'required',
+            'name' => 'required|string',
+            'dosage' => 'required|string',
+            'frequency' => 'required|integer', // frequência em horas
+            'duration' => 'required|integer', // duração em dias
+            'patient_id' => 'required|exists:patients,id',
         ]);
+
         try {
-            // Criação do novo usuário
+            // Criação da medicação
             $medications = new Medication();
             $medications->name = $validated['name'];
             $medications->dosage = $validated['dosage'];
@@ -77,25 +78,27 @@ class MedicationController extends Controller
             $medications->duration = $validated['duration'];
             $medications->patient_id = $validated['patient_id'];
 
-
-            // Salvando o usuário e verificando o sucesso
             if ($medications->save()) {
-                      // Criar as doses associadas
-            foreach ($validated['doses'] as $doseData) {
-                $dose = new Dose();
-                $dose->medication_id = $medications->id;
-                $dose->time = $doseData['time'];
-                $dose->date = $doseData['date'];
-                $dose->save();
-            }
+                // Gerar automaticamente as doses
+                $totalHours = $validated['duration'] * 24; // duração total em horas
+                $currentDateTime = now(); // hora inicial
+
+                for ($hours = 0; $hours < $totalHours; $hours += $validated['frequency']) {
+                    $dose = new Dose();
+                    $dose->timestamp = $currentDateTime->copy()->addHours($hours); // adiciona horas à data inicial
+                    $dose->status = "Aguardando";
+                    $dose->medication_id = $medications->id;
+                    $dose->save();
+                }
+
                 return response()->json([
                     'metadata' => [
                         'result' => 1,
                         'output' => ['raw' => 'sucesso.'],
-                        'reason' => 'Medicação cadastrada com sucesso',
+                        'reason' => 'Medicação e doses cadastradas com sucesso.',
                         'version' => 'V1',
                     ],
-                    'data' => $medications,
+                    'data' => $medications->load('doses'),
                 ], 201);
             }
 
@@ -103,12 +106,11 @@ class MedicationController extends Controller
                 'metadata' => [
                     'result' => 0,
                     'output' => ['raw' => 'erro.'],
-                    'reason' => 'Não foi possível cadastrar a Meddicação.',
+                    'reason' => 'Não foi possível cadastrar a Medicação.',
                     'version' => 'V1',
                 ],
             ], 500);
         } catch (\Exception $e) {
-
             return response()->json([
                 'metadata' => [
                     'result' => 0,
@@ -119,6 +121,7 @@ class MedicationController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Display the specified resource.
@@ -183,52 +186,59 @@ class MedicationController extends Controller
     {
         // Validação dos dados de entrada
         $validated = $request->validate([
-            'name' => 'required',
-            'dosage' => 'required',
-            'frequency' => 'required',
-            'duration' => 'required',
+            'name' => 'required|string',
+            'dosage' => 'required|string',
+            'frequency' => 'required|integer', // frequência em horas
+            'duration' => 'required|integer', // duração em dias
         ]);
 
         try {
-            // Buscando o Medicaçao no banco de dados
+            // Buscar a medicação pelo ID
             $medications = Medication::find($id);
-            // dd( $medications);
 
             if (!$medications) {
                 return response()->json([
                     'metadata' => [
                         'result' => 0,
                         'output' => ['raw' => 'erro.'],
-                        'reason' => 'Medicaçao não encontrada.',
+                        'reason' => 'Medicação não encontrada.',
                         'version' => 'V1',
                     ],
                 ], 404);
             }
 
-            $medications->name = $validated['name'];
-            $medications->dosage = $validated['dosage'];
-            $medications->frequency = $validated['frequency'];
-            $medications->duration = $validated['duration'];
-            if ($medications->save()) {
-                return response()->json([
-                    'metadata' => [
-                        'result' => 1,
-                        'output' => ['raw' => 'sucesso.'],
-                        'reason' => 'Medicaçao atualizado com sucesso.',
-                        'version' => 'V1',
-                    ],
-                    'data' => $medications,
-                ], 200);
+            // Atualizar os dados da medicação
+            $medications->update([
+                'name' => $validated['name'],
+                'dosage' => $validated['dosage'],
+                'frequency' => $validated['frequency'],
+                'duration' => $validated['duration'],
+            ]);
+
+            // Excluir doses anteriores
+            $medications->doses()->delete();
+
+            // Gerar novas doses
+            $totalHours = $validated['duration'] * 24; // duração total em horas
+            $currentDateTime = now(); // hora inicial
+
+            for ($hours = 0; $hours < $totalHours; $hours += $validated['frequency']) {
+                $dose = new Dose();
+                $dose->timestamp = $currentDateTime->copy()->addHours($hours); // adiciona horas à data inicial
+                $dose->status = "Aguardando";
+                $dose->medication_id = $medications->id;
+                $dose->save();
             }
 
             return response()->json([
                 'metadata' => [
-                    'result' => 0,
-                    'output' => ['raw' => 'erro.'],
-                    'reason' => 'Não foi possível atualizar o Medicaçao.',
+                    'result' => 1,
+                    'output' => ['raw' => 'sucesso.'],
+                    'reason' => 'Medicação atualizada com sucesso.',
                     'version' => 'V1',
                 ],
-            ], 500);
+                'data' => $medications->load('doses'),
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'metadata' => [
@@ -240,6 +250,7 @@ class MedicationController extends Controller
             ], 500);
         }
     }
+
 
 
     /**
@@ -264,8 +275,13 @@ class MedicationController extends Controller
                     ],
                 ], 404);
             }
-
+            $doses = Dose::where('medication_id', $id);
             if ($medications->delete()) {
+
+                foreach ($doses as $dose) {
+                    $dose =  new Dose();
+                    $dose->delete();
+                }
                 return response()->json([
                     'metadata' => [
                         'result' => 1,

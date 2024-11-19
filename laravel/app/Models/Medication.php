@@ -16,4 +16,14 @@ class Medication extends Model
         'duration', // in days, e.g. 7
         'patient_id',
     ];
+
+    public function doses()
+    {
+        return $this->hasMany(Dose::class);
+    }
+
+    public function patient()
+{
+    return $this->belongsTo(Patient::class);
+}
 }

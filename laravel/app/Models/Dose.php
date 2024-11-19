@@ -17,4 +17,10 @@ class Dose extends Model
         'justification',
         'medication_id',
     ];
+
+       // Relacionamento com Medication
+       public function medication()
+       {
+           return $this->belongsTo(Medication::class);
+       }
 }

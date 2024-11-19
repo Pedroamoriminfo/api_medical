@@ -2,6 +2,8 @@
 
 namespace App\Console;
 
+use App\Jobs\SendDoseNotification;
+use App\Models\Dose;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -15,7 +17,15 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        $schedule->call(function () {
+            $doses = Dose::where('status', 'Aguardando')
+                ->where('timestamp', '<=', now()) // Verifica doses no horário ou atrasadas
+                ->get();
+
+            foreach ($doses as $dose) {
+                SendDoseNotification::dispatch($dose); // Envia o Job para a fila
+            }
+        })->everyMinute(); // Executa a cada minuto
     }
 
     /**

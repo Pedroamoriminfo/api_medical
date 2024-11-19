@@ -16,9 +16,9 @@ class CreateDosesTable extends Migration
         Schema::create('doses', function (Blueprint $table) {
             $table->id();
             $table->timestamp('timestamp');
-            $table->string('status')->default('pending'); // Pending, taken, or lost
-            $table->text('justification')->nullable();
-            $table->foreignId('medication_id')->constrained('medications')->onDelete('cascade');
+            $table->string('status');
+            $table->string('justification')->nullable();
+            $table->foreignId('medication_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }
